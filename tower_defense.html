@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#171827">
+<title>Незалётыш</title>
+
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    margin: 0;
+    padding: 12px;
+    min-height: 100vh;
+    background: #171827;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+
+  .game {
+    width: 100%;
+    max-width: 950px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: clamp(24px, 5vw, 36px);
+    margin: 6px 0 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #b7b9d0;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  /* Верхняя панель статистики */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .stat {
+    background: #282a40;
+    padding: 9px 5px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #ffffff0d;
+  }
+
+  .stat small {
+    display: block;
+    color: #aeb1cb;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+
+  .stat b {
+    font-size: 19px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Панель сложности и скорости */
+  .top-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #282a40;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    color: #c6c9df;
+    font-size: 13px;
+    border: 1px solid #ffffff0d;
+  }
+
+  .difficulty-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .level-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  .level-tab {
+    flex: 1;
+    min-width: 110px;
+    padding: 8px 10px;
+    border-radius: 11px;
+    background: #282a40;
+    border: 1px solid #3f4363;
+    color: #c6c9df;
+    font-size: 12.5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .level-tab small {
+    display: block;
+    font-size: 10.5px;
+    color: #9ba0c2;
+    margin-top: 2px;
+  }
+
+  .level-tab.active {
+    background: #3a3e63;
+    border-color: #8f92ff;
+    color: #fff;
+    box-shadow: 0 4px 14px #7476d92e;
+  }
+
+  .level-tab.completed::after {
+    content: " ✓";
+    color: #6bea9c;
+  }
+
+  .top-bar select {
+    border: 1px solid #555879;
+    border-radius: 9px;
+    padding: 6px 10px;
+    background: #343750;
+    color: white;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .top-bar select:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .speed-btn {
+    padding: 7px 14px;
+    border-radius: 9px;
+    background: #3b3e5c;
+    color: #fff;
+    font-weight: bold;
+    font-size: 13px;
+    border: 1px solid #5c608a;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .speed-btn.active {
+    background: #d98a2b;
+    border-color: #ffbe6b;
+    color: #1c1305;
+  }
+
+  /* Игровое поле */
+  .canvas-wrap {
+    position: relative;
+    width: 100%;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #202b38;
+    border-radius: 15px;
+    border: 2px solid #414660;
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  /* Статусное сообщение */
+  #message {
+    text-align: center;
+    color: #ffe39a;
+    min-height: 22px;
+    margin: 9px 0;
+    font-size: 13.5px;
+    font-weight: 500;
+  }
+
+  /* Панель улучшения/продажи выбранной башни */
+  .tower-inspector {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #252842;
+    border: 1px solid #7476d9;
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    animation: fadeIn 0.16s ease-out;
+  }
+
+  .tower-inspector.show {
+    display: flex;
+  }
+
+  .inspector-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+  }
+
+  .inspector-info strong {
+    color: #fff;
+    font-size: 14px;
+  }
+
+  .inspector-info span {
+    color: #b7b9d0;
+    font-size: 12px;
+  }
+
+  .inspector-actions {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+
+  .btn-upgrade {
+    background: #368f68 !important;
+    padding: 9px 13px !important;
+    font-size: 12.5px !important;
+  }
+
+  .btn-upgrade:disabled {
+    background: #3a3d54 !important;
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-sell {
+    background: #a84252 !important;
+    padding: 9px 13px !important;
+    font-size: 12.5px !important;
+  }
+
+  .btn-close-insp {
+    background: #3d405c !important;
+    padding: 9px 11px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* Кнопки выбора башен и управления */
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  button {
+    border: 0;
+    border-radius: 12px;
+    padding: 11px 6px;
+    background: #343750;
+    color: white;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s, opacity 0.15s;
+    line-height: 1.35;
+  }
+
+  button small {
+    display: block;
+    font-weight: normal;
+    font-size: 11px;
+    color: #cfd2ea;
+    margin-top: 2px;
+  }
+
+  button.selected {
+    background: #686ad4;
+    outline: 2px solid #b8b9ff;
+  }
+
+  button:active:not(:disabled) { transform: scale(0.97); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .start { background: #328b69; }
+  .ability {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    box-shadow: 0 4px 14px #db277733;
+  }
+
+  .info {
+    background: #282a40;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    color: #c6c9df;
+    font-size: 12.5px;
+    line-height: 1.5;
+    border: 1px solid #ffffff0d;
+  }
+
+  /* Модальные окна (Финал и Правила) */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #10111bf0;
+    z-index: 20;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .overlay.show { display: flex; }
+
+  .modal-card {
+    width: 100%;
+    max-width: 460px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #292b43;
+    border-radius: 24px;
+    padding: 26px 20px;
+    border: 1px solid #555879;
+    box-shadow: 0 20px 60px #00000080;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .modal-card .emoji { font-size: 64px; line-height: 1.1; }
+
+  .modal-card h2 {
+    font-size: 26px;
+    margin: 10px 0;
+  }
+
+  .modal-card p {
+    color: #d1d2e2;
+    line-height: 1.55;
+    font-size: 14px;
+  }
+
+  .rules-list {
+    text-align: left;
+    background: #1f2136;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin: 14px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #dcdeee;
+  }
+
+  .rules-list h3 {
+    margin: 8px 0 4px;
+    font-size: 13.5px;
+    color: #ffe39a;
+  }
+
+  .rules-list h3:first-child { margin-top: 0; }
+
+  .rules-list ul {
+    margin: 4px 0 8px;
+    padding-left: 18px;
+  }
+
+  .rules-list li { margin-bottom: 4px; }
+
+  .modal-card button.primary-modal-btn {
+    background: #7779dd;
+    padding: 14px 26px;
+    font-size: 15px;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .modal-card button.next-level-btn {
+    background: #328b69;
+    padding: 14px 26px;
+    font-size: 15px;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 7px; }
+    .stat { padding: 7px 2px; }
+    .stat b { font-size: 16px; }
+    button { font-size: 11.5px; padding: 10px 3px; }
+    button small { font-size: 10px; }
+    .tower-inspector { flex-direction: column; align-items: stretch; }
+    .inspector-actions { justify-content: space-between; }
+    .inspector-actions button { flex: 1; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+  <h1>Незалётыш</h1>
+  <div class="subtitle">Защити яйцеклетку любой ценой! Ну или не защищай эм</div>
+
+  <!-- Статистика -->
+  <div class="stats">
+    <div class="stat">
+      <small>💰 Бюджет</small>
+      <b id="money">120</b>
+    </div>
+    <div class="stat">
+      <small>❤️ Защита</small>
+      <b id="lives">1</b>
+    </div>
+    <div class="stat">
+      <small>🌊 Волна</small>
+      <b id="wave">0/5</b>
+    </div>
+    <div class="stat">
+      <small>☠️ Уничтожено</small>
+      <b id="kills">0</b>
+    </div>
+  </div>
+
+  <!-- Переключатель уровней -->
+  <div class="level-tabs" id="levelTabs">
+    <button class="level-tab active" data-level="0" onclick="selectLevel(0)">
+      Уровень 1
+      <small>Классический лабиринт</small>
+    </button>
+    <button class="level-tab" data-level="1" onclick="selectLevel(1)">
+      Уровень 2
+      <small>Двойная спираль</small>
+    </button>
+    <button class="level-tab" data-level="2" onclick="selectLevel(2)">
+      Уровень 3
+      <small>Два фронта</small>
+    </button>
+  </div>
+
+  <!-- Выбор сложности и скорости -->
+  <div class="top-bar">
+    <div class="difficulty-group">
+      <label for="difficulty">⚙️ Сложность:</label>
+      <select id="difficulty" onchange="changeDifficulty(this.value)">
+        <option value="easy">Лёгкая</option>
+        <option value="normal" selected>Нормальная</option>
+        <option value="hard">Сложная</option>
+      </select>
+    </div>
+
+    <button class="speed-btn" id="speedBtn" onclick="toggleSpeed()">⏩ Скорость: x1</button>
+  </div>
+
+  <!-- Игровой холст -->
+  <div class="canvas-wrap">
+    <canvas id="game" width="900" height="520"></canvas>
+  </div>
+
+  <div id="message">Выбери защитную башню и размести её на поле.</div>
+
+  <!-- Инспектор выбранной установленной башни -->
+  <div class="tower-inspector" id="towerInspector">
+    <div class="inspector-info">
+      <strong id="inspTitle">🛡️ Лейкоцит (Ур. 1)</strong>
+      <span id="inspStats">Урон: 13 • Радиус: 135 • Перезарядка: 0.65с</span>
+    </div>
+    <div class="inspector-actions">
+      <button class="btn-upgrade" id="inspUpgradeBtn" onclick="upgradeSelectedTower()">⬆️ Улучшить (45💰)</button>
+      <button class="btn-sell" id="inspSellBtn" onclick="sellSelectedTower()">💸 Продать (+28💰)</button>
+      <button class="btn-close-insp" onclick="deselectPlacedTower()">✖</button>
+    </div>
+  </div>
+
+  <!-- Выбор башен для строительства -->
+  <div class="controls" id="towerButtons">
+    <button id="white" class="selected" onclick="selectTower('white')">
+      🛡️ Лейкоцит — 40💰
+      <small>Баланс урона и темпа</small>
+    </button>
+
+    <button id="antibody" onclick="selectTower('antibody')">
+      🎯 Антитело — 60💰
+      <small>Дальность + замедление 35%</small>
+    </button>
+
+    <button id="macro" onclick="selectTower('macro')">
+      💥 Макрофаг — 75💰
+      <small>Урон по области (сплеш)</small>
+    </button>
+  </div>
+
+  <!-- Основные игровые действия -->
+  <div class="controls">
+    <button class="start" onclick="startWave()" id="start">
+      ▶ НАЧАТЬ ВОЛНУ
+    </button>
+
+    <button class="ability" onclick="useSpecialAbility()" id="abilityBtn">
+      ⚡ Залп — 90💰
+      <small id="abilitySub">Урон всем + отброс</small>
+    </button>
+
+    <button onclick="showHelp()">
+      ❓ Правила
+      <small>Башни и враги</small>
+    </button>
+  </div>
+
+  <div class="info">
+    <b>Подсказка:</b> башни можно ставить и улучшать даже во время волны! Нажми на уже построенную башню, чтобы прокачать её до 3 уровня или продать. На каждом уровне в финальной волне ждёт Мега-лидер.
+  </div>
+
+</div>
+
+<!-- Модальное окно конца игры -->
+<div class="overlay" id="overlay">
+  <div class="modal-card">
+    <div class="emoji" id="resultEmoji">🥚</div>
+    <h2 id="resultTitle"></h2>
+    <p id="resultText"></p>
+    <button class="next-level-btn" id="nextLevelBtn" onclick="goToNextLevel()" style="display:none;">➡️ Следующий уровень</button>
+    <button class="primary-modal-btn" onclick="resetGame()">🔄 Играть заново</button>
+  </div>
+</div>
+
+<!-- Модальное окно правил -->
+<div class="overlay" id="helpOverlay" onclick="if(event.target===this) closeHelp()">
+  <div class="modal-card">
+    <div class="emoji">🧬</div>
+    <h2>Правила обороны</h2>
+    <div class="rules-list">
+      <h3>🗺️ 3 уникальных уровня</h3>
+      <ul>
+        <li><b>Уровень 1 (5 волн):</b> классический зигзаг, старт 120💰.</li>
+        <li><b>Уровень 2 (6 волн):</b> петля вокруг центрального острова, старт 140💰.</li>
+        <li><b>Уровень 3 (7 волн):</b> атака сразу с двух входов со слиянием перед яйцеклеткой, старт 160💰.</li>
+      </ul>
+
+      <h3>🗼 Защитные башни (до 3 ур.)</h3>
+      <ul>
+        <li><b>🛡️ Лейкоцит (40💰):</b> надёжный универсальный боец.</li>
+        <li><b>🎯 Антитело (60💰):</b> бьёт далеко и замедляет цель на 35%.</li>
+        <li><b>💥 Макрофаг (75💰):</b> снаряды взрываются и бьют по площади.</li>
+      </ul>
+
+      <h3>⚡ Экстренный залп (90💰)</h3>
+      <p style="margin:0 0 8px;font-size:13px;">Мощный импульс по всему маршруту: наносит урон всем врагам и отталкивает их назад (перезарядка 15 сек).</p>
+
+      <h3>👾 Типы противников</h3>
+      <ul>
+        <li><b>Обычный:</b> стандартная скорость и живучесть.</li>
+        <li><b>Спринтер:</b> очень быстрый, но хрупкий.</li>
+        <li><b>Бронированный:</b> толстая оболочка и много HP.</li>
+        <li><b>Стайка:</b> выходят плотной группой по 4–5 штук.</li>
+        <li><b>👑 Мега-лидер:</b> огромный финальный босс с короной.</li>
+      </ul>
+    </div>
+    <button class="primary-modal-btn" onclick="closeHelp()">Понятно, в бой!</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+const W = 900, H = 520;
+
+// ========================================
+// КОНФИГУРАЦИЯ 3 УРОВНЕЙ И МАРШРУТОВ
+// ========================================
+const levelsConfig = [
+  {
+    id: 0,
+    name: 'Уровень 1: Классический лабиринт',
+    shortName: 'Классический лабиринт',
+    startMoney: 120,
+    maxWaves: 5,
+    eggPos: { x: 850, y: 270 },
+    hint: 'Извилистый маршрут с 5 поворотами. Ставь башни на внутренних углах!',
+    paths: [
+      [
+        { x: 0,   y: 100 },
+        { x: 210, y: 100 },
+        { x: 210, y: 390 },
+        { x: 440, y: 390 },
+        { x: 440, y: 160 },
+        { x: 720, y: 160 },
+        { x: 850, y: 270 }
+      ]
+    ]
+  },
+  {
+    id: 1,
+    name: 'Уровень 2: Двойная спираль',
+    shortName: 'Двойная спираль',
+    startMoney: 140,
+    maxWaves: 6,
+    eggPos: { x: 845, y: 260 },
+    hint: 'Петля вокруг центрального острова! Башни в центре простреливают обе ветки.',
+    paths: [
+      [
+        { x: 0,   y: 85 },
+        { x: 640, y: 85 },
+        { x: 640, y: 435 },
+        { x: 185, y: 435 },
+        { x: 185, y: 260 },
+        { x: 845, y: 260 }
+      ]
+    ]
+  },
+  {
+    id: 2,
+    name: 'Уровень 3: Два фронта',
+    shortName: 'Два фронта',
+    startMoney: 160,
+    maxWaves: 7,
+    eggPos: { x: 850, y: 260 },
+    hint: 'Враги идут сразу с двух флангов и сходятся в узкое горлышко перед целью!',
+    paths: [
+      // Верхний фронт
+      [
+        { x: 0,   y: 95 },
+        { x: 310, y: 95 },
+        { x: 310, y: 185 },
+        { x: 575, y: 185 },
+        { x: 655, y: 260 },
+        { x: 850, y: 260 }
+      ],
+      // Нижний фронт
+      [
+        { x: 0,   y: 425 },
+        { x: 310, y: 425 },
+        { x: 310, y: 335 },
+        { x: 575, y: 335 },
+        { x: 655, y: 260 },
+        { x: 850, y: 260 }
+      ]
+    ]
+  }
+];
+
+let currentLevelIdx = 0;
+let completedLevels = new Set();
+let activePaths = [];           // Массив маршрутов текущего уровня
+let pathSegmentLengths = [];    // Длины сегментов для каждого маршрута
+
+function loadLevelRoutes(levelIdx) {
+  const lvl = levelsConfig[levelIdx];
+  activePaths = lvl.paths;
+  pathSegmentLengths = activePaths.map(route => {
+    const lens = [];
+    for (let i = 0; i < route.length - 1; i++) {
+      lens.push(Math.hypot(route[i + 1].x - route[i].x, route[i + 1].y - route[i].y));
+    }
+    return lens;
+  });
+}
+
+// ========================================
+// СОСТОЯНИЕ ИГРЫ
+// ========================================
+let money = levelsConfig[0].startMoney;
+let lives = 1;
+let wave = 0;
+let kills = 0;
+
+let selected = 'white';         // Выбранный тип башни для постройки
+let inspectedTower = null;      // Выбранная установленная башня для апгрейда/продажи
+let hoverPos = null;            // Текущая позиция курсора/пальца на холсте
+
+let towers = [];
+let enemies = [];
+let bullets = [];
+let particles = [];
+let shockwaves = [];            // Визуальные кольца от взрывов и залпа
+let floatingTexts = [];         // Всплывающие надписи (+10💰, КРИТ и т.д.)
+
+let playing = false;
+let finished = false;
+let gameSpeed = 1;              // 1 или 2
+
+let spawnQueue = [];            // Очередь врагов текущей волны
+let spawnTimer = 0;
+let totalEnemies = 0;
+
+let abilityCooldown = 0;        // Таймер перезарядки спецспособности
+const ABILITY_COST = 90;
+const ABILITY_CD_MAX = 15;
+
+let lastTime = 0;
+let animTime = 0;               // Общее время для синусоидальных анимаций
+
+loadLevelRoutes(0);
+
+// ========================================
+// НАСТРОЙКИ СЛОЖНОСТИ, БАШЕН И АРХЕТИПОВ ВРАГОВ
+// ========================================
+let difficulty = 'normal';
+
+const difficultySettings = {
+  easy: { count: 0.78, hp: 0.8, speed: 0.85, spawn: 0.95, label: 'Лёгкая' },
+  normal: { count: 1.0, hp: 1.0, speed: 1.0, spawn: 0.78, label: 'Нормальная' },
+  hard: { count: 1.28, hp: 1.32, speed: 1.18, spawn: 0.62, label: 'Сложная' }
+};
+
+const types = {
+  white: {
+    name: 'Лейкоцит',
+    cost: 40,
+    range: 135,
+    damage: 14,
+    speed: 0.62,
+    color: '#8be4b2',
+    icon: '🛡️'
+  },
+  antibody: {
+    name: 'Антитело',
+    cost: 60,
+    range: 185,
+    damage: 9,
+    speed: 0.34,
+    slow: 0.35,
+    color: '#81caff',
+    icon: '🎯'
+  },
+  macro: {
+    name: 'Макрофаг',
+    cost: 75,
+    range: 112,
+    damage: 26,
+    speed: 1.05,
+    splash: 48,
+    color: '#ff9b75',
+    icon: '💥'
+  }
+};
+
+const enemyArchetypes = {
+  normal: {
+    label: 'Обычный',
+    hpMult: 1,
+    speedMult: 1,
+    reward: 10,
+    radiusX: 14,
+    radiusY: 11,
+    color: '#a9dfff',
+    stroke: '#e9f8ff'
+  },
+  sprinter: {
+    label: 'Спринтер',
+    hpMult: 0.62,
+    speedMult: 1.65,
+    reward: 11,
+    radiusX: 17,
+    radiusY: 8,
+    color: '#ffdf78',
+    stroke: '#fff7d1'
+  },
+  armored: {
+    label: 'Бронированный',
+    hpMult: 2.35,
+    speedMult: 0.68,
+    reward: 16,
+    radiusX: 18,
+    radiusY: 15,
+    color: '#d49eff',
+    stroke: '#f3e3ff'
+  },
+  swarm: {
+    label: 'Стайка',
+    hpMult: 0.45,
+    speedMult: 1.2,
+    reward: 5,
+    radiusX: 10,
+    radiusY: 8,
+    color: '#7ef5c9',
+    stroke: '#d8fff0'
+  },
+  boss: {
+    label: 'Мега-лидер',
+    hpMult: 9.5,
+    speedMult: 0.56,
+    reward: 60,
+    radiusX: 27,
+    radiusY: 22,
+    color: '#ff6b8b',
+    stroke: '#ffe0e7'
+  }
+};
+
+// ========================================
+// ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+// ========================================
+function updateUI() {
+  const lvl = levelsConfig[currentLevelIdx];
+  document.getElementById('money').textContent = money;
+  document.getElementById('lives').textContent = lives;
+  document.getElementById('wave').textContent = `${wave}/${lvl.maxWaves}`;
+  document.getElementById('kills').textContent = kills;
+
+  document.getElementById('difficulty').disabled = wave > 0 || playing || finished;
+
+  // Обновляем подсветку вкладок уровней
+  document.querySelectorAll('.level-tab').forEach((tab, idx) => {
+    tab.classList.toggle('active', idx === currentLevelIdx);
+    tab.classList.toggle('completed', completedLevels.has(idx));
+  });
+
+  // Обновляем состояние кнопки спецспособности
+  const abBtn = document.getElementById('abilityBtn');
+  const abSub = document.getElementById('abilitySub');
+  if (abilityCooldown > 0) {
+    abBtn.disabled = true;
+    abSub.textContent = `Перезарядка: ${Math.ceil(abilityCooldown)}с`;
+  } else if (!playing || enemies.length === 0) {
+    abBtn.disabled = true;
+    abSub.textContent = money < ABILITY_COST ? 'Нужно 90 монет' : 'Ждёт врагов на поле';
+  } else if (money < ABILITY_COST) {
+    abBtn.disabled = true;
+    abSub.textContent = 'Не хватает монет';
+  } else {
+    abBtn.disabled = false;
+    abSub.textContent = 'Урон всем + отброс!';
+  }
+
+  updateInspectorUI();
+}
+
+function message(t) {
+  document.getElementById('message').textContent = t;
+}
+
+function selectLevel(levelIdx) {
+  if (levelIdx < 0 || levelIdx >= levelsConfig.length) return;
+  currentLevelIdx = levelIdx;
+  loadLevelRoutes(currentLevelIdx);
+  resetGame();
+}
+
+function goToNextLevel() {
+  if (currentLevelIdx + 1 < levelsConfig.length) {
+    selectLevel(currentLevelIdx + 1);
+  } else {
+    resetGame();
+  }
+}
+
+// ========================================
+// СКОРОСТЬ ИГРЫ И СЛОЖНОСТЬ
+// ========================================
+function toggleSpeed() {
+  gameSpeed = gameSpeed === 1 ? 2 : 1;
+  const btn = document.getElementById('speedBtn');
+  btn.textContent = `⏩ Скорость: x${gameSpeed}`;
+  btn.classList.toggle('active', gameSpeed === 2);
+}
+
+function changeDifficulty(value) {
+  if (wave > 0 || playing || finished) return;
+  difficulty = value;
+  message('Выбрана сложность: ' + difficultySettings[difficulty].label + '.');
+}
+
+// ========================================
+// ВЫБОР БАШНИ ДЛЯ ПОСТРОЙКИ И ИНСПЕКТОР
+// ========================================
+function selectTower(type) {
+  if (finished) return;
+  deselectPlacedTower();
+  selected = type;
+
+  document.querySelectorAll('#towerButtons button')
+    .forEach(b => b.classList.remove('selected'));
+
+  document.getElementById(type).classList.add('selected');
+
+  message(
+    `Выбрано: ${types[type].icon} ${types[type].name} (${types[type].cost}💰). Нажми на свободное место.`
+  );
+}
+
+function clearSelection() {
+  selected = null;
+  document.querySelectorAll('#towerButtons button')
+    .forEach(b => b.classList.remove('selected'));
+}
+
+function getUpgradeCost(tower) {
+  const base = types[tower.type].cost;
+  return Math.round(base * (tower.level === 1 ? 0.95 : 1.45));
+}
+
+function getTowerStats(tower) {
+  const base = types[tower.type];
+  const lvl = tower.level;
+  return {
+    damage: Math.round(base.damage * (1 + (lvl - 1) * 0.55)),
+    range: Math.round(base.range * (1 + (lvl - 1) * 0.14)),
+    speed: +(base.speed * Math.pow(0.88, lvl - 1)).toFixed(2),
+    splash: base.splash ? Math.round(base.splash * (1 + (lvl - 1) * 0.15)) : 0,
+    slow: base.slow ? Math.min(0.6, base.slow + (lvl - 1) * 0.08) : 0
+  };
+}
+
+function inspectPlacedTower(tower) {
+  clearSelection();
+  inspectedTower = tower;
+  updateInspectorUI();
+  message(`Выбрана башня: ${types[tower.type].name} (Уровень ${tower.level}).`);
+}
+
+function deselectPlacedTower() {
+  inspectedTower = null;
+  document.getElementById('towerInspector').classList.remove('show');
+}
+
+function updateInspectorUI() {
+  const panel = document.getElementById('towerInspector');
+  if (!inspectedTower) {
+    panel.classList.remove('show');
+    return;
+  }
+
+  panel.classList.add('show');
+  const base = types[inspectedTower.type];
+  const st = getTowerStats(inspectedTower);
+
+  document.getElementById('inspTitle').textContent =
+    `${base.icon} ${base.name} • Уровень ${inspectedTower.level}/3`;
+
+  let extra = '';
+  if (st.slow > 0) extra = ` • Замедление: ${Math.round(st.slow * 100)}%`;
+  if (st.splash > 0) extra = ` • Взрыв: ${st.splash}px`;
+
+  document.getElementById('inspStats').textContent =
+    `Урон: ${st.damage} • Радиус: ${st.range} • Темп: ${st.speed}с${extra}`;
+
+  const upgBtn = document.getElementById('inspUpgradeBtn');
+  if (inspectedTower.level >= 3) {
+    upgBtn.textContent = '⭐ Макс. уровень';
+    upgBtn.disabled = true;
+  } else {
+    const cost = getUpgradeCost(inspectedTower);
+    upgBtn.textContent = `⬆️ Улучшить (${cost}💰)`;
+    upgBtn.disabled = money < cost || finished;
+  }
+
+  const sellValue = Math.round(inspectedTower.totalInvested * 0.7);
+  document.getElementById('inspSellBtn').textContent = `💸 Продать (+${sellValue}💰)`;
+}
+
+function upgradeSelectedTower() {
+  if (!inspectedTower || inspectedTower.level >= 3 || finished) return;
+  const cost = getUpgradeCost(inspectedTower);
+  if (money < cost) {
+    message('Недостаточно монет для улучшения!');
+    return;
+  }
+
+  money -= cost;
+  inspectedTower.totalInvested += cost;
+  inspectedTower.level++;
+
+  addParticle(inspectedTower.x, inspectedTower.y, '#ffe39a', 12);
+  addFloatingText(inspectedTower.x, inspectedTower.y - 24, `УР. ${inspectedTower.level}!`, '#ffe39a');
+  updateUI();
+  message(`${types[inspectedTower.type].name} улучшен до ${inspectedTower.level} уровня!`);
+}
+
+function sellSelectedTower() {
+  if (!inspectedTower || finished) return;
+  const refund = Math.round(inspectedTower.totalInvested * 0.7);
+  money += refund;
+
+  addParticle(inspectedTower.x, inspectedTower.y, '#ff9b75', 10);
+  addFloatingText(inspectedTower.x, inspectedTower.y - 20, `+${refund}💰`, '#8be4b2');
+
+  towers = towers.filter(t => t !== inspectedTower);
+  deselectPlacedTower();
+  updateUI();
+  message(`Башня продана за ${refund} монет.`);
+}
+
+// ========================================
+// ГЕОМЕТРИЯ И ВАЛИДАЦИЯ ПОЗИЦИИ
+// ========================================
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function distanceToPath(p) {
+  let min = Infinity;
+  for (const route of activePaths) {
+    for (let i = 0; i < route.length - 1; i++) {
+      const a = route[i];
+      const b = route[i + 1];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lenSq = dx * dx + dy * dy;
+      const t = lenSq === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq));
+      const q = { x: a.x + t * dx, y: a.y + t * dy };
+      min = Math.min(min, distance(p, q));
+    }
+  }
+  return min;
+}
+
+function canPlaceAt(p) {
+  if (!p) return { ok: false, reason: '' };
+  const eggPos = levelsConfig[currentLevelIdx].eggPos;
+
+  if (p.x < 25 || p.x > W - 25 || p.y < 25 || p.y > H - 25) {
+    return { ok: false, reason: 'Слишком близко к краю поля.' };
+  }
+  if (distanceToPath(p) < 42) {
+    return { ok: false, reason: 'Слишком близко к маршруту!' };
+  }
+  if (distance(p, eggPos) < 62) {
+    return { ok: false, reason: 'Нельзя ставить прямо на яйцеклетку!' };
+  }
+  if (towers.some(t => distance(t, p) < 43)) {
+    return { ok: false, reason: 'Башни слишком близко друг к другу!' };
+  }
+  if (selected && money < types[selected].cost) {
+    return { ok: false, reason: `Недостаточно монет! Нужно ${types[selected].cost}.` };
+  }
+  return { ok: true, reason: '' };
+}
+
+function getCanvasCoords(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) / r.width * W,
+    y: (e.clientY - r.top) / r.height * H
+  };
+}
+
+let isPointerDown = false;
+let pointerDownPos = null;
+
+// Отслеживание наведения и перетаскивания пальцем/мышью для точного прицеливания
+canvas.addEventListener('pointermove', e => {
+  hoverPos = getCanvasCoords(e);
+});
+
+canvas.addEventListener('pointerleave', () => {
+  if (!isPointerDown) {
+    hoverPos = null;
+  }
+});
+
+canvas.addEventListener('pointercancel', () => {
+  isPointerDown = false;
+  pointerDownPos = null;
+  hoverPos = null;
+});
+
+// При нажатии фиксируем точку старта и показываем превью (особенно удобно на телефоне)
+canvas.addEventListener('pointerdown', e => {
+  if (finished) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+  isPointerDown = true;
+  const p = getCanvasCoords(e);
+  pointerDownPos = p;
+  hoverPos = p;
+
+  if (canvas.setPointerCapture) {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+});
+
+// Установка башни или выбор существующей происходит при отпускании кнопки/пальца
+canvas.addEventListener('pointerup', e => {
+  if (!isPointerDown || finished) return;
+  isPointerDown = false;
+
+  const p = getCanvasCoords(e);
+  hoverPos = p;
+
+  if (canvas.releasePointerCapture) {
+    try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  // Если палец почти не сдвигался — проверяем клик по уже построенной башне
+  const movedDist = pointerDownPos ? distance(pointerDownPos, p) : 0;
+  pointerDownPos = null;
+
+  if (movedDist < 14) {
+    const clickedTower = towers.find(t => distance(t, p) <= 25);
+    if (clickedTower) {
+      inspectPlacedTower(clickedTower);
+      if (e.pointerType !== 'mouse') hoverPos = null;
+      return;
+    }
+  }
+
+  // Если башня для строительства не выбрана — снимаем выделение с инспектора
+  if (!selected) {
+    deselectPlacedTower();
+    if (e.pointerType !== 'mouse') hoverPos = null;
+    return;
+  }
+
+  const check = canPlaceAt(p);
+  if (!check.ok) {
+    message(check.reason);
+    if (e.pointerType !== 'mouse') hoverPos = null;
+    return;
+  }
+
+  const t = types[selected];
+  towers.push({
+    x: p.x,
+    y: p.y,
+    type: selected,
+    level: 1,
+    totalInvested: t.cost,
+    cooldown: 0,
+    angle: 0
+  });
+
+  money -= t.cost;
+  addParticle(p.x, p.y, t.color, 10);
+  updateUI();
+  message(`${t.icon} ${t.name} установлен! Можешь ставить ещё или улучшать.`);
+
+  // На сенсорных экранах убираем призрачный круг после отпускания пальца
+  if (e.pointerType !== 'mouse') {
+    hoverPos = null;
+  }
+});
+
+// ========================================
+// СПЕЦСПОСОБНОСТЬ: ЭКСТРЕННЫЙ ЗАЛП
+// ========================================
+function useSpecialAbility() {
+  if (!playing || finished || abilityCooldown > 0 || enemies.length === 0) return;
+  if (money < ABILITY_COST) {
+    message(`Нужно ${ABILITY_COST} монет для запуска залпа!`);
+    return;
+  }
+
+  money -= ABILITY_COST;
+  abilityCooldown = ABILITY_CD_MAX;
+
+  const eggPos = levelsConfig[currentLevelIdx].eggPos;
+
+  // Ударная волна от яйцеклетки
+  shockwaves.push({
+    x: eggPos.x,
+    y: eggPos.y,
+    radius: 20,
+    maxRadius: 920,
+    life: 0.65,
+    maxLife: 0.65,
+    color: '#f472b6'
+  });
+
+  const baseDamage = 35 + wave * 14;
+
+  for (const e of enemies) {
+    if (e.dead) continue;
+    // Босс получает чуть меньше отталкивания, но ощутимый урон
+    const dmg = e.archetype === 'boss' ? Math.round(baseDamage * 1.4) : baseDamage;
+    e.hp -= dmg;
+    e.slowTimer = Math.max(e.slowTimer, 2.0);
+    e.slowFactor = Math.max(e.slowFactor, 0.4);
+
+    // Отталкиваем назад по маршруту
+    const pushBack = e.archetype === 'boss' ? 35 : 85;
+    pushEnemyBack(e, pushBack);
+
+    addParticle(e.x, e.y, '#f472b6', 6);
+    addFloatingText(e.x, e.y - 16, `-${dmg}`, '#ff99cc');
+  }
+
+  updateUI();
+  message('⚡ Спермицидный залп! Все враги получили урон и отброшены назад!');
+}
+
+function pushEnemyBack(e, dist) {
+  const route = activePaths[e.pathIndex];
+  const segLens = pathSegmentLengths[e.pathIndex];
+  let rem = dist;
+
+  while (rem > 0) {
+    if (e.progress >= rem) {
+      e.progress -= rem;
+      rem = 0;
+    } else {
+      rem -= e.progress;
+      if (e.segment > 0) {
+        e.segment--;
+        e.progress = segLens[e.segment];
+      } else {
+        e.progress = 0;
+        rem = 0;
+      }
+    }
+  }
+  const a = route[e.segment];
+  const b = route[e.segment + 1];
+  const len = segLens[e.segment] || 1;
+  const t = e.progress / len;
+  e.x = a.x + (b.x - a.x) * t;
+  e.y = a.y + (b.y - a.y) * t;
+}
+
+// ========================================
+// ФОРМИРОВАНИЕ И ЗАПУСК ВОЛН
+// ========================================
+function buildWaveQueue(waveNum) {
+  const settings = difficultySettings[difficulty];
+  const lvl = levelsConfig[currentLevelIdx];
+  const isFinalWave = waveNum === lvl.maxWaves;
+  const routeCount = activePaths.length;
+  const queue = [];
+
+  let toggleRoute = 0;
+  const nextRoute = () => {
+    if (routeCount === 1) return 0;
+    const r = toggleRoute % routeCount;
+    toggleRoute++;
+    return r;
+  };
+
+  const pushEnemy = (archetype, delayAfter, forcedPathIdx = null) => {
+    const pathIndex = forcedPathIdx !== null ? forcedPathIdx : nextRoute();
+    queue.push({ archetype, delayAfter, pathIndex });
+  };
+
+  // На 2-м и 3-м уровнях враги чуть плотнее
+  const levelScale = 1 + currentLevelIdx * 0.12;
+  const baseCount = Math.max(5, Math.round((7 + waveNum * 3) * settings.count * levelScale));
+  const stepDelay = Math.max(0.32, settings.spawn * (routeCount > 1 ? 0.78 : 1));
+
+  if (currentLevelIdx === 0) {
+    // УРОВЕНЬ 1: Классический прогресс (5 волн)
+    if (waveNum === 1) {
+      for (let i = 0; i < baseCount; i++) pushEnemy('normal', stepDelay);
+    } else if (waveNum === 2) {
+      for (let i = 0; i < baseCount; i++) {
+        const type = i % 3 === 2 ? 'sprinter' : 'normal';
+        pushEnemy(type, type === 'sprinter' ? stepDelay * 0.85 : stepDelay);
+      }
+    } else if (waveNum === 3) {
+      for (let i = 0; i < baseCount; i++) {
+        if (i === 4) {
+          for (let s = 0; s < 4; s++) pushEnemy('swarm', s === 3 ? stepDelay : 0.22);
+        } else if (i % 4 === 0) {
+          pushEnemy('armored', stepDelay * 1.2);
+        } else if (i % 3 === 0) {
+          pushEnemy('sprinter', stepDelay * 0.85);
+        } else {
+          pushEnemy('normal', stepDelay);
+        }
+      }
+    } else if (waveNum === 4) {
+      for (let i = 0; i < baseCount + 2; i++) {
+        if (i === 3 || i === 9) {
+          for (let s = 0; s < 4; s++) pushEnemy('swarm', s === 3 ? stepDelay : 0.2);
+        } else if (i % 3 === 0) {
+          pushEnemy('armored', stepDelay * 1.15);
+        } else if (i % 2 === 0) {
+          pushEnemy('sprinter', stepDelay * 0.8);
+        } else {
+          pushEnemy('normal', stepDelay * 0.9);
+        }
+      }
+    } else if (isFinalWave) {
+      for (let i = 0; i < baseCount; i++) {
+        if (i === 4 || i === 10) {
+          for (let s = 0; s < 5; s++) pushEnemy('swarm', s === 4 ? stepDelay : 0.18);
+        } else if (i % 3 === 0) {
+          pushEnemy('armored', stepDelay * 1.1);
+        } else if (i % 2 === 0) {
+          pushEnemy('sprinter', stepDelay * 0.8);
+        } else {
+          pushEnemy('normal', stepDelay * 0.85);
+        }
+      }
+      pushEnemy('boss', 1.5);
+    }
+  } else if (currentLevelIdx === 1) {
+    // УРОВЕНЬ 2: Двойная спираль — больше Спринтеров и Стаек (6 волн)
+    for (let i = 0; i < baseCount + 2; i++) {
+      if (waveNum >= 2 && (i === 3 || (waveNum >= 4 && i === 9))) {
+        const swarmSize = 5;
+        for (let s = 0; s < swarmSize; s++) {
+          pushEnemy('swarm', s === swarmSize - 1 ? stepDelay : 0.18);
+        }
+      } else if (waveNum >= 3 && i % 4 === 0) {
+        pushEnemy('armored', stepDelay * 1.1);
+      } else if (i % 2 === 0) {
+        pushEnemy('sprinter', stepDelay * 0.78);
+      } else {
+        pushEnemy('normal', stepDelay * 0.85);
+      }
+    }
+    if (isFinalWave) {
+      pushEnemy('armored', 0.6);
+      pushEnemy('boss', 1.5);
+    }
+  } else {
+    // УРОВЕНЬ 3: Два фронта — синхронные атаки с верхнего и нижнего путей (7 волн)
+    for (let i = 0; i < baseCount + 3; i++) {
+      const flank = i % 2;
+      if (waveNum >= 2 && (i === 4 || (waveNum >= 5 && i === 10))) {
+        // Стайка выходит сразу по обоим фронтам!
+        for (let s = 0; s < 4; s++) {
+          pushEnemy('swarm', 0.08, 0);
+          pushEnemy('swarm', s === 3 ? stepDelay : 0.18, 1);
+        }
+      } else if (waveNum >= 2 && i % 3 === 0) {
+        pushEnemy('armored', stepDelay * 1.05, flank);
+      } else if (i % 2 === 1) {
+        pushEnemy('sprinter', stepDelay * 0.76, flank);
+      } else {
+        pushEnemy('normal', stepDelay * 0.82, flank);
+      }
+    }
+    if (isFinalWave) {
+      // На 7-й волне идут два бронированных стража по обоим фронтам и Мега-лидер!
+      pushEnemy('armored', 0.25, 0);
+      pushEnemy('armored', 0.9, 1);
+      pushEnemy('boss', 1.5, 0);
+    }
+  }
+
+  return queue;
+}
+
+function startWave() {
+  const lvl = levelsConfig[currentLevelIdx];
+  if (playing || finished || wave >= lvl.maxWaves) return;
+
+  wave++;
+  playing = true;
+  spawnQueue = buildWaveQueue(wave);
+  totalEnemies = spawnQueue.length;
+  spawnTimer = 0.1;
+
+  document.getElementById('start').textContent = `🌊 ВОЛНА ${wave}/${lvl.maxWaves} ИДЁТ`;
+  document.getElementById('start').disabled = true;
+
+  if (wave === lvl.maxWaves) {
+    message('⚠️ ФИНАЛЬНАЯ ВОЛНА УРОВНЯ! Готовься к встрече с Мега-лидером!');
+  } else {
+    message(`Волна ${wave}/${lvl.maxWaves} началась! Можно продолжать строить и улучшать башни.`);
+  }
+
+  updateUI();
+}
+
+function spawnEnemy(archetypeKey, pathIndex = 0) {
+  const settings = difficultySettings[difficulty];
+  const arch = enemyArchetypes[archetypeKey];
+  const route = activePaths[pathIndex] || activePaths[0];
+
+  // Небольшое усиление врагов на 2-м и 3-м уровнях
+  const levelHpScale = 1 + currentLevelIdx * 0.14;
+  const baseHp = (26 + wave * 13) * settings.hp * levelHpScale;
+  const hp = Math.round(baseHp * arch.hpMult);
+  const speed = (48 + wave * 6.5) * settings.speed * arch.speedMult;
+
+  const initialAngle = Math.atan2(route[1].y - route[0].y, route[1].x - route[0].x);
+
+  enemies.push({
+    x: route[0].x,
+    y: route[0].y,
+    pathIndex: pathIndex,
+    segment: 0,
+    progress: 0,
+    angle: initialAngle,
+    archetype: archetypeKey,
+    hp: hp,
+    maxHp: hp,
+    baseSpeed: speed,
+    reward: arch.reward,
+    radiusX: arch.radiusX,
+    radiusY: arch.radiusY,
+    color: arch.color,
+    stroke: arch.stroke,
+    slowTimer: 0,
+    slowFactor: 0,
+    swimPhase: Math.random() * Math.PI * 2,
+    dead: false
+  });
+}
+
+// ========================================
+// ДВИЖЕНИЕ ВРАГОВ
+// ========================================
+function moveEnemy(e, dt) {
+  if (e.slowTimer > 0) {
+    e.slowTimer -= dt;
+    if (e.slowTimer <= 0) e.slowFactor = 0;
+  }
+
+  const route = activePaths[e.pathIndex];
+  const segLens = pathSegmentLengths[e.pathIndex];
+
+  const currentSpeed = e.baseSpeed * (1 - e.slowFactor);
+  let remaining = currentSpeed * dt;
+
+  while (remaining > 0 && e.segment < route.length - 1) {
+    const a = route[e.segment];
+    const b = route[e.segment + 1];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = segLens[e.segment];
+
+    e.angle = Math.atan2(dy, dx);
+
+    const left = len - e.progress;
+    const step = Math.min(remaining, left);
+
+    e.progress += step;
+    remaining -= step;
+
+    const t = e.progress / len;
+    e.x = a.x + dx * t;
+    e.y = a.y + dy * t;
+
+    if (e.progress >= len) {
+      e.segment++;
+      e.progress = 0;
+    }
+  }
+
+  if (e.segment >= route.length - 1) {
+    lives = 0;
+    updateUI();
+    endGame(false);
+  }
+}
+
+// ========================================
+// ЧАСТИЦЫ, УДАРНЫЕ ВОЛНЫ И ВСПЛЫВАЮЩИЙ ТЕКСТ
+// ========================================
+function addParticle(x, y, color, count = 7) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x,
+      y,
+      vx: (Math.random() - 0.5) * 140,
+      vy: (Math.random() - 0.5) * 140,
+      life: 0.42,
+      maxLife: 0.42,
+      color
+    });
+  }
+}
+
+function addFloatingText(x, y, text, color = '#fff') {
+  floatingTexts.push({
+    x,
+    y,
+    text,
+    color,
+    life: 0.85,
+    maxLife: 0.85
+  });
+}
+
+// ========================================
+// ОСНОВНОЕ ОБНОВЛЕНИЕ ИГРЫ
+// ========================================
+function update(rawDt) {
+  if (finished) return;
+
+  const dt = rawDt * gameSpeed;
+  animTime += dt;
+
+  if (abilityCooldown > 0) {
+    abilityCooldown = Math.max(0, abilityCooldown - dt);
+    updateUI();
+  }
+
+  // Появление врагов из очереди волны
+  if (playing) {
+    spawnTimer -= dt;
+    while (spawnQueue.length > 0 && spawnTimer <= 0) {
+      const next = spawnQueue.shift();
+      spawnEnemy(next.archetype, next.pathIndex);
+      spawnTimer += next.delayAfter;
+    }
+
+    for (const e of enemies) {
+      if (!e.dead) moveEnemy(e, dt);
+      if (finished) return;
+    }
+  }
+
+  // Работа башен
+  for (const t of towers) {
+    t.cooldown -= dt;
+    const stats = getTowerStats(t);
+    const config = types[t.type];
+
+    // Ищем цель, продвинувшуюся дальше всех по пути
+    let target = null;
+    let maxProgress = -1;
+
+    for (const e of enemies) {
+      if (e.dead) continue;
+      if (distance(t, e) <= stats.range) {
+        const totalProg = e.segment * 10000 + e.progress;
+        if (totalProg > maxProgress) {
+          maxProgress = totalProg;
+          target = e;
+        }
+      }
+    }
+
+    if (target) {
+      t.angle = Math.atan2(target.y - t.y, target.x - t.x);
+      if (t.cooldown <= 0) {
+        bullets.push({
+          x: t.x,
+          y: t.y,
+          target: target,
+          tx: target.x,
+          ty: target.y,
+          damage: stats.damage,
+          splash: stats.splash,
+          slow: stats.slow,
+          speed: t.type === 'macro' ? 370 : 460,
+          color: config.color,
+          remove: false
+        });
+        t.cooldown = stats.speed;
+      }
+    }
+  }
+
+  // Движение и попадание снарядов
+  for (const b of bullets) {
+    if (b.target && !b.target.dead) {
+      b.tx = b.target.x;
+      b.ty = b.target.y;
+    } else {
+      b.target = null;
+    }
+
+    const dx = b.tx - b.x;
+    const dy = b.ty - b.y;
+    const d = Math.hypot(dx, dy);
+    const step = b.speed * dt;
+
+    if (d < step + 8) {
+      if (b.splash > 0) {
+        // Урон по площади (Макрофаг)
+        shockwaves.push({
+          x: b.tx,
+          y: b.ty,
+          radius: 8,
+          maxRadius: b.splash,
+          life: 0.28,
+          maxLife: 0.28,
+          color: b.color
+        });
+        for (const e of enemies) {
+          if (!e.dead && distance({ x: b.tx, y: b.ty }, e) <= b.splash + e.radiusX * 0.5) {
+            e.hp -= b.damage;
+          }
+        }
+        addParticle(b.tx, b.ty, b.color, 10);
+      } else {
+        // Одиночный выстрел
+        if (b.target && !b.target.dead) {
+          b.target.hp -= b.damage;
+          if (b.slow > 0) {
+            b.target.slowTimer = 1.8;
+            b.target.slowFactor = Math.max(b.target.slowFactor, b.slow);
+          }
+        }
+        addParticle(b.tx, b.ty, b.color, 6);
+      }
+
+      b.remove = true;
+      b.target = null;
+    } else if (d > 0) {
+      b.x += (dx / d) * step;
+      b.y += (dy / d) * step;
+    }
+  }
+
+  // Проверка гибели врагов
+  let uiDirty = false;
+  for (const e of enemies) {
+    if (e.hp <= 0 && !e.dead) {
+      e.dead = true;
+      money += e.reward;
+      kills++;
+      uiDirty = true;
+      addParticle(e.x, e.y, '#b7f4d0', e.archetype === 'boss' ? 24 : 8);
+      addFloatingText(e.x, e.y - 12, `+${e.reward}💰`, '#8be4b2');
+    }
+  }
+  if (uiDirty) updateUI();
+
+  bullets = bullets.filter(b => !b.remove);
+  enemies = enemies.filter(e => !e.dead);
+
+  // Обновление частиц
+  for (const p of particles) {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+  }
+  particles = particles.filter(p => p.life > 0);
+
+  // Обновление ударных волн
+  for (const sw of shockwaves) {
+    sw.life -= dt;
+    const t = 1 - Math.max(0, sw.life / sw.maxLife);
+    sw.radius = 8 + (sw.maxRadius - 8) * t;
+  }
+  shockwaves = shockwaves.filter(sw => sw.life > 0);
+
+  // Обновление всплывающего текста
+  for (const ft of floatingTexts) {
+    ft.y -= 28 * dt;
+    ft.life -= dt;
+  }
+  floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+
+  // Проверка завершения волны
+  if (playing && spawnQueue.length === 0 && enemies.length === 0) {
+    playing = false;
+    const lvl = levelsConfig[currentLevelIdx];
+    const startBtn = document.getElementById('start');
+
+    if (wave >= lvl.maxWaves) {
+      startBtn.textContent = '🏆 УРОВЕНЬ ПРОЙДЕН!';
+      endGame(true);
+    } else {
+      const waveBonus = 25 + wave * 5;
+      money += waveBonus;
+      startBtn.disabled = false;
+      startBtn.textContent = `▶ ВОЛНА ${wave + 1}/${lvl.maxWaves}`;
+      updateUI();
+      message(`Волна ${wave}/${lvl.maxWaves} отбита! Бонус +${waveBonus} монет. Готовься к следующей!`);
+    }
+  }
+}
+
+// ========================================
+// ОТРИСОВКА ДОРОГИ И ПОЛЯ
+// ========================================
+function drawPath() {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Сначала рисуем внешнюю кайму для всех маршрутов, чтобы на слиянии они выглядели цельно
+  for (const route of activePaths) {
+    ctx.beginPath();
+    ctx.moveTo(route[0].x, route[0].y);
+    for (let i = 1; i < route.length; i++) ctx.lineTo(route[i].x, route[i].y);
+    ctx.strokeStyle = '#313f49';
+    ctx.lineWidth = 66;
+    ctx.stroke();
+  }
+
+  // Основное полотно дороги
+  for (const route of activePaths) {
+    ctx.beginPath();
+    ctx.moveTo(route[0].x, route[0].y);
+    for (let i = 1; i < route.length; i++) ctx.lineTo(route[i].x, route[i].y);
+    ctx.strokeStyle = '#40515c';
+    ctx.lineWidth = 58;
+    ctx.stroke();
+  }
+
+  // Пунктирная разметка и метки старта
+  activePaths.forEach((route, idx) => {
+    ctx.beginPath();
+    ctx.moveTo(route[0].x, route[0].y);
+    for (let i = 1; i < route.length; i++) ctx.lineTo(route[i].x, route[i].y);
+    ctx.strokeStyle = '#788b9188';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 12]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#9bb2b8';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'left';
+    const label = activePaths.length > 1 ? `ФРОНТ ${idx + 1} →` : 'СТАРТ →';
+    const labelY = route[0].y > H / 2 ? route[0].y - 36 : route[0].y - 24;
+    ctx.fillText(label, 12, labelY);
+  });
+
+  ctx.restore();
+}
+
+function drawEgg() {
+  const eggPos = levelsConfig[currentLevelIdx].eggPos;
+
+  // Находим минимальную дистанцию от врагов до яйцеклетки для тревожной пульсации
+  let minDist = Infinity;
+  for (const e of enemies) {
+    minDist = Math.min(minDist, distance(e, eggPos));
+  }
+
+  const danger = minDist < 240 ? Math.max(0, 1 - minDist / 240) : 0;
+  const pulseSpeed = 3 + danger * 10;
+  const pulseAmp = 1.5 + danger * 5.5;
+  const radius = 42 + Math.sin(animTime * pulseSpeed) * pulseAmp;
+
+  ctx.save();
+  // Ореол тревоги при приближении врага
+  if (danger > 0.05) {
+    ctx.beginPath();
+    ctx.arc(eggPos.x, eggPos.y, radius + 12, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 85, 115, ${0.15 + danger * 0.25})`;
+    ctx.fill();
+  }
+
+  ctx.beginPath();
+  ctx.arc(eggPos.x, eggPos.y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = danger > 0.4 ? '#ffd0a2' : '#ffe6a2';
+  ctx.fill();
+
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = danger > 0.4 ? '#ff7676' : '#ffbd68';
+  ctx.stroke();
+
+  ctx.font = '35px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🥚', eggPos.x, eggPos.y + 2);
+  ctx.restore();
+}
+
+// ========================================
+// ГЛАВНАЯ ОТРИСОВКА КАДРА
+// ========================================
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Фон
+  ctx.fillStyle = '#202b38';
+  ctx.fillRect(0, 0, W, H);
+
+  // Сетка
+  ctx.strokeStyle = '#ffffff07';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  drawPath();
+  drawEgg();
+
+  // Ghost-превью перед установкой башни
+  if (selected && hoverPos && !finished) {
+    const check = canPlaceAt(hoverPos);
+    const base = types[selected];
+    const previewColor = check.ok ? '#5eead4' : '#fb7185';
+
+    ctx.save();
+    // Круг радиуса атаки
+    ctx.beginPath();
+    ctx.arc(hoverPos.x, hoverPos.y, base.range, 0, Math.PI * 2);
+    ctx.fillStyle = check.ok ? 'rgba(94, 234, 212, 0.10)' : 'rgba(251, 113, 133, 0.12)';
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = previewColor;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Силуэт самой башни
+    ctx.globalAlpha = 0.72;
+    ctx.beginPath();
+    ctx.arc(hoverPos.x, hoverPos.y, 23, 0, Math.PI * 2);
+    ctx.fillStyle = check.ok ? base.color : '#ef4444';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+
+    ctx.font = '22px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(base.icon, hoverPos.x, hoverPos.y + 1);
+    ctx.restore();
+  }
+
+  // Башни
+  for (const t of towers) {
+    const config = types[t.type];
+    const stats = getTowerStats(t);
+    const isInspected = inspectedTower === t;
+
+    ctx.save();
+
+    // Подсветка радиуса для выбранной башни
+    if (isInspected) {
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, stats.range, 0, Math.PI * 2);
+      ctx.fillStyle = config.color + '1c';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = config.color + '88';
+      ctx.stroke();
+    }
+
+    // Небольшой указатель направления ствола/прицела
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.rotate(t.angle || 0);
+    ctx.fillStyle = '#ffffffcc';
+    ctx.beginPath();
+    ctx.roundRect(14, -4, 13, 8, 4);
+    ctx.fill();
+    ctx.restore();
+
+    // Корпус башни
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, 23, 0, Math.PI * 2);
+    ctx.fillStyle = config.color;
+    ctx.fill();
+
+    // Обводка зависит от уровня башни
+    ctx.strokeStyle = t.level === 3 ? '#ffd700' : (t.level === 2 ? '#b8f2ff' : '#ffffff');
+    ctx.lineWidth = t.level > 1 ? 4 : 3;
+    ctx.stroke();
+
+    // Иконка башни
+    ctx.font = '22px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'white';
+    ctx.fillText(config.icon, t.x, t.y + 1);
+
+    // Звёздочки уровня под башней
+    if (t.level > 1) {
+      ctx.font = 'bold 11px Arial';
+      ctx.fillStyle = '#ffe39a';
+      ctx.fillText('★'.repeat(t.level), t.x, t.y + 31);
+    }
+
+    ctx.restore();
+  }
+
+  // Противники
+  for (const e of enemies) {
+    ctx.save();
+    ctx.translate(e.x, e.y);
+
+    // Поворот по направлению движения
+    ctx.save();
+    ctx.rotate(e.angle);
+
+    // Анимация виляющего хвостика
+    const wag = Math.sin(animTime * (e.archetype === 'sprinter' ? 18 : 11) + e.swimPhase) * (e.radiusY * 0.75);
+    const tailLen = e.radiusX * 2.4;
+
+    ctx.beginPath();
+    ctx.moveTo(-e.radiusX * 0.7, 0);
+    ctx.quadraticCurveTo(-e.radiusX * 1.5, -wag, -tailLen, wag * 0.6);
+    ctx.strokeStyle = e.slowTimer > 0 ? '#7dd3fc' : e.color;
+    ctx.lineWidth = e.archetype === 'boss' ? 6 : 3.5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Головка
+    ctx.beginPath();
+    ctx.ellipse(0, 0, e.radiusX, e.radiusY, 0, 0, Math.PI * 2);
+    ctx.fillStyle = e.slowTimer > 0 ? '#bae6fd' : e.color;
+    ctx.fill();
+
+    ctx.strokeStyle = e.slowTimer > 0 ? '#38bdf8' : e.stroke;
+    ctx.lineWidth = e.archetype === 'armored' || e.archetype === 'boss' ? 3.5 : 2;
+    ctx.stroke();
+
+    // Дополнительная броня для бронированного
+    if (e.archetype === 'armored') {
+      ctx.beginPath();
+      ctx.ellipse(2, 0, e.radiusX * 0.55, e.radiusY * 0.55, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff88';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Корона у босса (не вращается, всегда сверху)
+    if (e.archetype === 'boss') {
+      ctx.font = '20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('👑', 0, -e.radiusY - 12);
+    }
+
+    // Полоска здоровья
+    const barW = e.archetype === 'boss' ? 56 : 34;
+    const barY = -e.radiusY - (e.archetype === 'boss' ? 9 : 10);
+    ctx.fillStyle = '#3b1d27';
+    ctx.fillRect(-barW / 2, barY, barW, 5);
+
+    ctx.fillStyle = e.archetype === 'boss' ? '#ff6b8b' : '#6bea9c';
+    ctx.fillRect(-barW / 2, barY, barW * Math.max(0, e.hp / e.maxHp), 5);
+
+    ctx.restore();
+  }
+
+  // Снаряды
+  for (const b of bullets) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.splash > 0 ? 6.5 : 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+  }
+
+  // Ударные волны
+  for (const sw of shockwaves) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, sw.life / sw.maxLife);
+    ctx.beginPath();
+    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = sw.color;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Частицы
+  for (const p of particles) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3.2, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Всплывающий текст
+  for (const ft of floatingTexts) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
+    ctx.font = 'bold 13px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = ft.color;
+    ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.restore();
+  }
+}
+
+// ========================================
+// ФИНАЛ И ПЕРЕЗАПУСК БЕЗ ПЕРЕЗАГРУЗКИ СТРАНИЦЫ
+// ========================================
+function endGame(won) {
+  finished = true;
+  playing = false;
+  deselectPlacedTower();
+  document.getElementById('overlay').classList.add('show');
+
+  const nextBtn = document.getElementById('nextLevelBtn');
+  const lvl = levelsConfig[currentLevelIdx];
+
+  if (won) {
+    completedLevels.add(currentLevelIdx);
+    updateUI();
+
+    const hasNext = currentLevelIdx + 1 < levelsConfig.length;
+    nextBtn.style.display = hasNext ? 'block' : 'none';
+
+    if (hasNext) {
+      nextBtn.textContent = `➡️ Перейти на Уровень ${currentLevelIdx + 2}`;
+      document.getElementById('resultEmoji').textContent = '🎉🥚';
+      document.getElementById('resultTitle').textContent = 'УРОВЕНЬ ПРОЙДЕН!';
+      document.getElementById('resultText').innerHTML =
+        `<b>«${lvl.shortName}»</b> успешно защищён!<br><br>` +
+        `Все ${lvl.maxWaves} волн и Мега-лидер отбиты.<br>` +
+        `Уничтожено целей: <b>${kills}</b>.<br><br>` +
+        '<b>Готов к следующему испытанию?</b>';
+    } else {
+      document.getElementById('resultEmoji').textContent = '🏆🥚';
+      document.getElementById('resultTitle').textContent = 'АБСОЛЮТНАЯ ПОБЕДА!';
+      document.getElementById('resultText').innerHTML =
+        'Беременность не наступила ни на одном из 3 уровней!<br><br>' +
+        `Даже двойная атака на Уровне 3 не пробила твою оборону.<br>` +
+        `Уничтожено целей: <b>${kills}</b>.<br><br>` +
+        '<b>Ты настоящий мастер защиты!</b>';
+    }
+  } else {
+    nextBtn.style.display = 'none';
+    document.getElementById('resultEmoji').textContent = '👶';
+    document.getElementById('resultTitle').textContent = 'ПОЗДРАВЛЯЕМ!';
+    document.getElementById('resultText').innerHTML =
+      'Вы беременны!<br><br>' +
+      `Один из противников прорвал оборону на уровне <b>«${lvl.shortName}»</b>.<br><br>` +
+      '<b>Кажется, пора выбирать имя...</b>';
+  }
+}
+
+function resetGame() {
+  const lvl = levelsConfig[currentLevelIdx];
+  loadLevelRoutes(currentLevelIdx);
+
+  money = lvl.startMoney;
+  lives = 1;
+  wave = 0;
+  kills = 0;
+  towers = [];
+  enemies = [];
+  bullets = [];
+  particles = [];
+  shockwaves = [];
+  floatingTexts = [];
+  spawnQueue = [];
+  playing = false;
+  finished = false;
+  abilityCooldown = 0;
+  deselectPlacedTower();
+
+  document.getElementById('overlay').classList.remove('show');
+  const startBtn = document.getElementById('start');
+  startBtn.disabled = false;
+  startBtn.textContent = '▶ НАЧАТЬ ВОЛНУ';
+
+  selectTower('white');
+  updateUI();
+  message(`${lvl.name}: ${lvl.hint}`);
+}
+
+// ========================================
+// МОДАЛЬНОЕ ОКНО ПРАВИЛ
+// ========================================
+function showHelp() {
+  document.getElementById('helpOverlay').classList.add('show');
+}
+
+function closeHelp() {
+  document.getElementById('helpOverlay').classList.remove('show');
+}
+
+// ========================================
+// ГЛАВНЫЙ ЦИКЛ
+// ========================================
+function loop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000 || 0, 0.05);
+  lastTime = timestamp;
+
+  update(dt);
+  draw();
+
+  requestAnimationFrame(loop);
+}
+
+// Инициализация
+resetGame();
+requestAnimationFrame(loop);
+</script>
+
+</body>
+</html>
